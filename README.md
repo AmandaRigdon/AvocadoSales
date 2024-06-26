@@ -357,7 +357,4 @@ from avocadostaging;
 
 Looks like PLU 4225 avocados are the most popular. The 4225 PLU is for a generally large avocado that's 8-10 ounces in weight. If people are buying bags, then they are the small ones. This makes sense since most families can't get thru a huge bag of avocados before they spoil.
 
-I also went ahead and made some visualizations in Tableau that are linked in the dashboard below!
-
-
-
+I also went ahead and made some visualizations in Tableau [here!](https://public.tableau.com/views/avocados_17194371192000/Dashboard12?:language=en-US&publish=yes&:sid=&:display_count=n&:origin=viz_share_link)
