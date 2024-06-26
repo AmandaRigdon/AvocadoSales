@@ -290,4 +290,74 @@ ORDER BY Month(Date);
 
 The 2018 data is definitely changing the outcome here... but if we go by the other months, it looks like May is pretty popular. Would this maybe be due to cincdo de Mayo celebrations?
 
+What about organic and conventional avocados? Which is more popular?
+
+```sql
+SELECT COUNT(type)
+from avocadostaging
+WHERE type = "conventional";
+```
+<img width="103" alt="Screenshot 2024-06-26 at 1 58 33 PM" src="https://github.com/AmandaRigdon/AvocadoSales/assets/137234405/0de0b0e6-67c7-4fa9-89c4-a8848bafd909">
+
+```sql
+SELECT COUNT(type)
+from avocadostaging
+WHERE type = "organic";
+```
+<img width="80" alt="Screenshot 2024-06-26 at 1 49 44 PM" src="https://github.com/AmandaRigdon/AvocadoSales/assets/137234405/c493c494-88e2-474e-90f0-ef06526bae6e">
+
+Surprisingly, these are almost equal! I would think conventional avocados would be more popular because they are typically much cheaper.
+
+Speaking of being cheaper, what's the total cost of conventional avocados vs. organic?
+
+```sql
+SELECT type, SUM(AveragePrice)
+from avocadostaging
+group by type
+ORDER BY SUM(AveragePrice);
+```
+<img width="190" alt="Screenshot 2024-06-26 at 2 01 53 PM" src="https://github.com/AmandaRigdon/AvocadoSales/assets/137234405/1f053641-4495-41e4-95ab-c289af57bdd1">
+
+Clearly, organic avocados cost quite more. 30% more in fact! And since the # of conventional and organic avocados bought is almost equal, that price increase doesn't seem to sway customers.
+
+So where would we go to find the cheapest organic avocados?
+
+```sql
+SELECT SUM(AveragePrice), type, region
+from avocadostaging
+WHERE type = "organic"
+GROUP BY region
+ORDER BY SUM(AveragePrice);
+```
+<img width="393" alt="Screenshot 2024-06-26 at 2 04 36 PM" src="https://github.com/AmandaRigdon/AvocadoSales/assets/137234405/e7058e78-e8ae-488e-afc7-532a72be4f26">
+
+Looks like in this dataset, Houston has the cheapest! 
+
+What about the cheapest conventional avocados?
+
+```sql
+SELECT SUM(AveragePrice), type, region
+from avocadostaging
+WHERE type = "conventional"
+GROUP BY region
+order by SUM(AveragePrice);
+```
+
+<img width="313" alt="Screenshot 2024-06-26 at 2 13 25 PM" src="https://github.com/AmandaRigdon/AvocadoSales/assets/137234405/9066f8fa-2585-47e0-b2c5-c5880d8e1445">
+
+Phoenix/Tuscon areas followed by Houston have the cheapest regular avocados. 
+
+Do people prefer buying bagged or loose avocados?
+
+```sql
+SELECT SUM(4046), SUM(4225), SUM(4770), SUM(SmallBags), sum(LargeBags), SUM(XLargeBags)
+from avocadostaging;
+```
+<img width="497" alt="Screenshot 2024-06-26 at 2 19 45 PM" src="https://github.com/AmandaRigdon/AvocadoSales/assets/137234405/8c5bd3dc-c035-44de-a858-3520b3fd629d">
+
+Looks like PLU 4225 avocados are the most popular. The 4225 PLU is for a generally large avocado that's 8-10 ounces in weight. If people are buying bags, then they are the small ones. This makes sense since most families can't get thru a huge bag of avocados before they spoil.
+
+I also went ahead and made some visualizations in Tableau that are linked in the dashboard below!
+
+
 
