@@ -161,5 +161,133 @@ LargeBags = ROUND(LargeBags, 0),
 XLargeBags = ROUND(XLargeBags, 0);
 ```
 
+Time to address region - there's some very vague ones like "Midsouth" and "West." There's also "TotalUS" which would just be duplicated data of everything we have if it is indeed the entire country.
+
+Since this is just an EDA, I'll look into how many rows would be removed if we took these out. In real life, this would be something that would need clarification of course.
+
+```sql
+SELECT COUNT(region)
+from avocadostaging
+WHERE region = 'Midsouth' AND region = 'TotalUS' AND region = 'West';
+```
+All in all, it's about 1,000 rows to remove. This is quite a bit, but this data is not useful for analysis so I'll remove them.
+
+```sql
+DELETE FROM avocadostaging
+WHERE region = 'Midsouth' AND region = 'TotalUS' AND region = 'West';
+```
+
+After considering the data again, the regions are still going to be difficult to parse out. I can at least enter spacing, but some cities are lumped in with each other. There are also entire states in this column, so the data will look very skewed.
+I'm going to continue to remove some data, specifically anything under "California" and "South Carolina"
+
+```sql
+DELETE FROM avocadostaging
+WHERE region = 'California'; AND region = 'South Carolina';
+```
+
+Now I'd like to separate the region names from camelcase into spaced values. This turned out to be something that's a lot harder than I originally envisioned. I had to search online for a function that would do this for me.
+
+```sql
+DELIMITER @@
+DROP FUNCTION IF EXISTS change_case@@
+CREATE FUNCTION change_case (word VARCHAR(15000)) RETURNS VARCHAR(15000)
+COMMENT 'Change the case to Proper Case, A-Z (65-90 decimal|ASCII) , 
+  but if first char in between a-z (97-122) than change case to upper' DETERMINISTIC
+BEGIN
+  SET @text = word; -- input str
+  SET @result = ""; -- modified str
+  SET @i = 2;       -- counter
+  -- if first char is in between a-z than change to upper
+  IF ASCII(SUBSTRING(@text, 1, 1)) BETWEEN 97 AND 122 THEN 
+    SET @text = CONCAT(UPPER(SUBSTRING(@text, 1, 1)), SUBSTRING(@text, 2));
+  END IF;
+  SET @result = UPPER(SUBSTRING(@text, 1, 1));
+  WHILE @i <= LENGTH(@text) DO
+    SET @t = SUBSTRING(@text, @i, 1);
+    SET @p = SUBSTRING(@text, @i-1, 1);
+    -- if curr_char is upper and pre_char is lower then insert space and the char       eg coName   > co Name
+    IF ASCII(@t) BETWEEN 65 AND 90 AND ASCII(@p) BETWEEN 97 AND 122 THEN
+    -- eg SomeCO   > Some CO
+        SET @result = CONCAT(@result,' ', @t);
+    -- pre_char is space & curr_char is lower
+    ELSEIF (ASCII(@p) = 32 OR @p = '_' OR @p = '-') AND ASCII(@t) BETWEEN 97 AND 122 THEN
+    -- eg some cO  > some CO
+      SET @result = CONCAT(@result,' ', UPPER(@t));
+    ELSEIF @t = '_' OR @t = '-' THEN
+    -- Replace _ OR - > space
+      SET @result = CONCAT(@result,' ');
+    -- for lower case
+    ELSE
+    -- someco        > someco
+      SET @result = CONCAT(@result, @t);
+    END IF;
+    SET @i = @i + 1;
+  END WHILE;
+  SET @result = REGEXP_REPLACE(@result, '[ ]+', ' ');
+  RETURN @result;
+END @@
+```
+
+Checking to see that the function did its job.
+
+```sql
+SELECT change_case(Region)
+from avocadostaging;
+```
+
+Looks like it did! Let's update the table.
+
+```sql
+UPDATE avocadostaging
+SET region = change_case(region);
+```
+
+## EDA
+
+Let's have a look at the cheapest average price of avocados:
+
+```sql
+SELECT MIN(AveragePrice)
+from avocadostaging;
+```
+
+<img width="110" alt="Screenshot 2024-06-26 at 11 43 46 AM" src="https://github.com/AmandaRigdon/AvocadoSales/assets/137234405/14c77f63-b4a2-4668-8d51-1f5bfd23992d">
+
+.44 cents! That would be a dream in 2024. This may be from an area where there's avocados locally.
+
+How about the max average price?
+
+```sql
+SELECT MAX(AveragePrice)
+from avocadostaging;
+```
+
+<img width="115" alt="Screenshot 2024-06-26 at 11 50 33 AM" src="https://github.com/AmandaRigdon/AvocadoSales/assets/137234405/c5e0c7c8-9fc3-4e76-841d-378490654635">
+
+$3.25 even in 2024 is very high for a singular avocado. This may be in an area where avocados aren't grown locally?
+
+Which years sold the most avocados?
+
+```sql
+SELECT Year(Date), SUM(TotalVolume)
+from avocadostaging
+GROUP BY Year(Date)
+ORDER BY Year(Date);
+```
+<img width="173" alt="Screenshot 2024-06-26 at 11 58 48 AM" src="https://github.com/AmandaRigdon/AvocadoSales/assets/137234405/06e04275-2269-4dfa-b294-c008dfaac6e8">
+
+Looks like 2017 was the highest year, but I can't be completely sure because I only have data from Jan-March of 2018.
+
+Let's have a look by month
+
+```sql
+SELECT Month(Date), SUM(TotalVolume)
+from avocadostaging
+GROUP BY Month(Date)
+ORDER BY Month(Date);
+```
+<img width="177" alt="Screenshot 2024-06-26 at 12 09 58 PM" src="https://github.com/AmandaRigdon/AvocadoSales/assets/137234405/a91b571b-05b8-4851-be37-e6019dac6294">
+
+The 2018 data is definitely changing the outcome here... but if we go by the other months, it looks like May is pretty popular. Would this maybe be due to cincdo de Mayo celebrations?
 
 
